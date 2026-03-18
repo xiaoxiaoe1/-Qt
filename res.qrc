@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icon/Class.png</file>
+        <file>icon/Honor.png</file>
+        <file>icon/Money.png</file>
+        <file>icon/stdInfo.png</file>
+        <file>icon/System.png</file>
+        <file>style.qss</file>
+        <file>icon/Systemicon.png</file>
+    </qresource>
+</RCC>

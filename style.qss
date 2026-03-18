@@ -1,0 +1,87 @@
+/* ======================================
+   终极发光 · 赛博朋克 炸裂游戏UI
+====================================== */
+QMainWindow {
+    background-color: #050218;
+}
+
+/* 左侧面板 */
+#leftWidget {
+    background-color: #100a22;
+    border-right: 4px solid #ff00ff;
+}
+
+/* 工具按钮 - 基础 */
+QToolButton {
+    background-color: #1b143a;
+    border: 2px solid #a0f;
+    border-radius: 14px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+    min-width: 90px;
+    min-height: 90px;
+    icon-size: 48px;
+    margin: 8px;
+}
+
+/* 悬停 - 青色超强发光 */
+QToolButton:hover {
+    background-color: #241852;
+    border: 2px solid #0ff;
+    color: #0ff;
+    box-shadow: 0 0 25px #0ff, 0 0 50px rgba(0,255,255,0.4);
+}
+
+/* 选中 - 终极紫色爆炸发光 */
+QToolButton:checked {
+    background-color: #32206a;
+    border: 2px solid #ff00ff;
+    color: #fff;
+    box-shadow: 0 0 35px #f0f, 0 0 60px #f0f, 0 0 80px rgba(255,0,255,0.6);
+}
+
+/* 右侧内容卡片 */
+QStackedWidget {
+    background-color: #0d0824;
+    border-radius: 22px;
+    border: 0px solid #a0f;
+    margin: none;
+}
+
+/* 全局透明 */
+QWidget {
+    background-color: transparent;
+}
+
+/* 文字 */
+QLabel {
+    color: #e0d8ff;
+    font-size: 15px;
+}
+
+/* 输入框 */
+QLineEdit {
+    background-color: #1b143a;
+    border: 2px solid #a0f;
+    border-radius: 10px;
+    padding: 10px;
+    color: #fff;
+}
+QLineEdit:focus {
+    border: 2px solid #0ff;
+    box-shadow: 0 0 15px #0ff;
+}
+
+/* 按钮 */
+QPushButton {
+    background-color: #ff00aa;
+    border-radius: 12px;
+    color: white;
+    padding: 12px 24px;
+    font-weight: bold;
+}
+QPushButton:hover {
+    background-color: #ff29aa;
+    box-shadow: 0 0 20px #ff00aa;
+}
