@@ -30,7 +30,7 @@ QToolButton:hover {
     background-color: #241852;
     border: 2px solid #0ff;
     color: #0ff;
-    box-shadow: 0 0 25px #0ff, 0 0 50px rgba(0,255,255,0.4);
+
 }
 
 /* 选中 - 终极紫色爆炸发光 */
@@ -38,7 +38,7 @@ QToolButton:checked {
     background-color: #32206a;
     border: 2px solid #ff00ff;
     color: #fff;
-    box-shadow: 0 0 35px #f0f, 0 0 60px #f0f, 0 0 80px rgba(255,0,255,0.6);
+
 }
 
 /* 右侧内容卡片 */
@@ -70,7 +70,7 @@ QLineEdit {
 }
 QLineEdit:focus {
     border: 2px solid #0ff;
-    box-shadow: 0 0 15px #0ff;
+
 }
 
 /* 按钮 */
@@ -83,5 +83,83 @@ QPushButton {
 }
 QPushButton:hover {
     background-color: #ff29aa;
-    box-shadow: 0 0 20px #ff00aa;
+
+}
+
+/* ============================== */
+/* ✅ 性别下拉框 QComboBox 浅色样式 */
+/* ============================== */
+QComboBox {
+    background-color: #f0f8ff;    /* 浅色背景 */
+    color: #1f2937;               /* 深色文字，看得非常清楚 */
+    border: 2px solid #a0f;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 14px;
+    min-height: 20px;
+}
+
+/* 下拉列表本身（点击展开的部分） */
+QComboBox QAbstractItemView {
+    background-color: #ffffff;
+    color: #000000;
+    selection-background-color: #a0f; /* 选中紫色发光 */
+    selection-color: #ffffff;
+    border: 1px solid #a0f;
+}
+
+/* 下拉箭头 */
+QComboBox::drop-down {
+    border: none;
+    width: 30px;
+}
+QComboBox::down-arrow {
+    width: 12px;
+    height: 12px;
+    border-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAQElEQVQYlWNgYGD4z8DAwMgABXAGNgGwSgwVAFbmAgXQdISfAAAAABJRU5ErkJggg==);
+}
+
+/* 聚焦时青色发光 */
+QComboBox:focus {
+    border: 2px solid #0ff;
+}
+
+/* ============================== */
+/* ✅ 年龄输入框 QSpinBox 浅色样式 */
+/* ============================== */
+QSpinBox {
+    background-color: #f0f8ff;    /* 浅白背景，和性别下拉框一致 */
+    color: #1f2937;               /* 深色文字，清晰可见 */
+    border: 2px solid #a0f;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 14px;
+    min-height: 20px;
+}
+
+/* 上下调节按钮区域 */
+QSpinBox::up-button, QSpinBox::down-button {
+    background-color: #a0f;
+    border: none;
+    width: 25px;
+}
+QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+    background-color: #0ff;
+}
+
+/* 上下箭头图标 */
+QSpinBox::up-arrow {
+    width: 8px;
+    height: 8px;
+    border-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADkuczmAAAAQElEQVQYlWNgYGD4z8DAwMgABXAGNgGwSgwVAFbmAgXQdISfAAAAABJRU5ErkJggg==);
+}
+QSpinBox::down-arrow {
+    width: 8px;
+    height: 8px;
+    border-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADkuczmAAAAQ0lEQVQYlWNgYGD4z8DAwMgABXAGNgGwSgwVAFbmAgXQdISfAAAAABJRU5ErkJggg==);
+}
+
+/* 聚焦时青色发光（和输入框一致） */
+QSpinBox:focus {
+    border: 2px solid #0ff;
 }

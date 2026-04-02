@@ -1,4 +1,5 @@
-QT       += core gui
+QT       += core gui widgets charts
+QT       += sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -17,13 +18,23 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    moneywidget.cpp \
+    schedulewidget.cpp \
+    studeninfowight.cpp
 
 HEADERS += \
-    mainwindow.h
+    mainwindow.h \
+    moneywidget.h \
+    schedulewidget.h \
+    studeninfowight.h \
+    tabledelegates.h
 
 FORMS += \
-    mainwindow.ui
+    mainwindow.ui \
+    moneywidget.ui \
+    schedulewidget.ui \
+    studeninfowight.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
