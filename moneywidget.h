@@ -26,6 +26,11 @@ public:
 
 private:
     void setupUI();
+    void locadMoney();
+    void populateStudentComboBox();
+    void addRecord();
+    void editRecord();
+    void deleteRecord();
     QtCharts::QChartView* pieChartView;
     QtCharts::QChartView* chartView;
     QTableWidget* tablewidget;

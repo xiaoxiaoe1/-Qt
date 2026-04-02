@@ -53,20 +53,73 @@ MainWindow::MainWindow(QWidget *parent)
      ***********************/
 
     QSqlQuery query;
-    query.exec("ALTER TABLE student RENAME TO student_old;");
+    
+    // 检查student表是否存在
+    QSqlQuery checkTableQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='student'");
+    bool studentTableExists = checkTableQuery.next();
+    qDebug() << "student表存在：" << studentTableExists;
+    
+    if (studentTableExists) {
+        // 检查表结构，看是否有student_id字段
+        QSqlQuery checkColumnQuery("PRAGMA table_info(student)");
+        bool hasStudentId = false;
+        while (checkColumnQuery.next()) {
+            QString columnName = checkColumnQuery.value(1).toString();
+            if (columnName == "student_id") {
+                hasStudentId = true;
+                break;
+            }
+        }
+        qDebug() << "student表有student_id字段：" << hasStudentId;
+        
+        // 检查student表是否有数据
+        QSqlQuery countQuery("SELECT COUNT(*) FROM student");
+        if (countQuery.next()) {
+            int count = countQuery.value(0).toInt();
+            qDebug() << "student表数据数量：" << count;
+        }
+    }
+    
+    // 尝试重命名旧表并创建新表
+    if (!query.exec("ALTER TABLE student RENAME TO student_old;")) {
+        qDebug() << "重命名表失败：" << query.lastError().text();
+    }
 
-    query.exec("CREATE TABLE IF NOT EXISTS student ("
-               "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-               "student_id TEXT,"
-               "name TEXT,"
-               "gender TEXT,"
-               "age INTEGER,"
-               "phone TEXT,"
-               "address TEXT,"
-               "class_name TEXT,"
-               "avatar BLOB)");  // 这里改成 BLOB
+    if (!query.exec("CREATE TABLE IF NOT EXISTS student ("  
+               "id INTEGER PRIMARY KEY AUTOINCREMENT,"  
+               "student_id TEXT,"  
+               "name TEXT,"  
+               "gender TEXT,"  
+               "age INTEGER,"  
+               "phone TEXT,"  
+               "address TEXT,"  
+               "class_name TEXT,"  
+               "avatar BLOB)"  // 这里改成 BLOB
+               )) {
+        qDebug() << "创建表失败：" << query.lastError().text();
+    }
 
-    query.exec("INSERT INTO student SELECT * FROM student_old;");
+    if (!query.exec("INSERT INTO student SELECT * FROM student_old;")) {
+        qDebug() << "插入数据失败：" << query.lastError().text();
+    }
+    
+    // 检查student表是否有数据，如果没有，插入测试数据
+    QSqlQuery countQuery("SELECT COUNT(*) FROM student");
+    if (countQuery.next()) {
+        int count = countQuery.value(0).toInt();
+        qDebug() << "插入后student表数据数量：" << count;
+        
+        if (count == 0) {
+            // 插入测试数据
+            QString insertTestData = "INSERT INTO student (student_id, name, gender, age, phone, address, class_name) VALUES ('20410001', '张三', '男', 18, '13800138000', '北京市', '高一(1)班');";
+            if (query.exec(insertTestData)) {
+                qDebug() << "插入测试数据成功";
+            } else {
+                qDebug() << "插入测试数据失败：" << query.lastError().text();
+            }
+        }
+    }
+    
     query.exec("DROP TABLE student_old;");
 
     //创建schedule 表（如果不存在）
@@ -86,6 +139,44 @@ MainWindow::MainWindow(QWidget *parent)
         return;
     }
     qDebug() << "✅ schedule 表已存在或创建成功";
+
+    //创建financialRecords表
+
+    QString createFinancialTable =
+            "CREATE TABLE IF NOT EXISTS financialRecords ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"    // 记录ID（主键）
+            "student_id TEXT,"                         // 关联学生学号（和student表对应）
+            "payment_date TEXT,"                       // 缴费日期（图片字段）
+            "amount REAL,"                             // 金额（图片字段）
+            "payment_type TEXT,"                       // 缴费类型（图片字段）
+            "notes TEXT,"                              // 备注（对应图片里的tes/remark）
+            "FOREIGN KEY (student_id) REFERENCES student(student_id)"  // 外键关联学生
+            ");";
+
+    if (!query.exec(createFinancialTable)) {
+        qDebug() << "创建表失败：" << query.lastError().text();
+        return;
+    }
+    qDebug() << "✅ createFinancialTable 表已存在或创建成功";
+
+    // 插入financialRecords表的内容
+//   QString insertFinanceSql =
+//        "INSERT INTO financialRecords ("
+//        "student_id, payment_date, amount, payment_type, notes"
+//        ") VALUES ("
+//       "'20410001', "                  // 学号（必须和 student 表里的 student_id 一致）
+//        "'2026-04-02', "         // 缴费日期
+//        "5600.00, "              // 金额
+//        "'学费', "               // 缴费类型
+//        "'2026年春季学期缴费'"   // 备注
+//        ");";
+
+//    if (!query.exec(insertFinanceSql)) {
+//        qDebug() << "插入数据失败：" << query.lastError().text();
+//        return;
+//    }
+//    qDebug() << "✅ 财务数据插入成功";
+
 
 
     // ======================
