@@ -1,37 +1,61 @@
 #include "studeninfowight.h"
 #include "ui_studeninfowight.h"
 
-#include <QDialog>
-#include <QGroupBox>
-#include <QFormLayout>
-#include <QLineEdit>
-#include <QComboBox>
-#include <QSpinBox>
-#include <QLineEdit>
-#include <QLabel>
-#include <QFileDialog>
-#include <QStandardPaths>
-#include <QFile>
-#include <QBuffer>
-#include <QMessageBox>
 #include "tabledelegates.h"
-#include "studeninfowight.h"
 
-studenInfoWight::studenInfoWight(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::studenInfoWight)
+#include <QBuffer>
+#include <QComboBox>
+#include <QDialog>
+#include <QFileDialog>
+#include <QFormLayout>
+#include <QGroupBox>
+#include <QLabel>
+#include <QLineEdit>
+#include <QMessageBox>
+#include <QPushButton>
+#include <QSpinBox>
+#include <QSqlError>
+#include <QSqlQuery>
+#include <QStandardPaths>
+#include <QVBoxLayout>
+
+studenInfoWight::studenInfoWight(QWidget *parent)
+    : QWidget(parent)
+    , ui(new Ui::studenInfoWight)
 {
     ui->setupUi(this);
-    ui->tableWidget->verticalHeader()->setDefaultSectionSize(100);
 
-    //设置图标的男女性别
-    ComboBoxDelegate* genderDelegate = new ComboBoxDelegate(this);
-    genderDelegate->setItems(QStringList() << "男" << "女");
+    ui->pbAdd->setText(QString::fromUtf8("新增学生"));
+    ui->pbdeleteItem->setText(QString::fromUtf8("清空字段"));
+    ui->pbdeleteLine->setText(QString::fromUtf8("删除学生"));
+
+    const QStringList headers = {
+        QString::fromUtf8("编号"),
+        QString::fromUtf8("学号"),
+        QString::fromUtf8("姓名"),
+        QString::fromUtf8("性别"),
+        QString::fromUtf8("年龄"),
+        QString::fromUtf8("电话"),
+        QString::fromUtf8("地址"),
+        QString::fromUtf8("班级"),
+        QString::fromUtf8("头像")
+    };
+    for (int column = 0; column < headers.count(); ++column) {
+        if (ui->tableWidget->horizontalHeaderItem(column)) {
+            ui->tableWidget->horizontalHeaderItem(column)->setText(headers[column]);
+        }
+    }
+
+    ui->tableWidget->verticalHeader()->setDefaultSectionSize(100);
+    ui->tableWidget->setAlternatingRowColors(true);
+    ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectItems);
+
+    auto *genderDelegate = new ComboBoxDelegate(this);
+    genderDelegate->setItems({QString::fromUtf8("男"), QString::fromUtf8("女")});
     ui->tableWidget->setItemDelegateForColumn(3, genderDelegate);
-    //图片列代理
     ui->tableWidget->setItemDelegateForColumn(8, new ImageDelegate(this));
+
     refreshTable();
-    //连接item修改信号
     connect(ui->tableWidget, &QTableWidget::itemChanged, this, &studenInfoWight::handItemChanged);
 }
 
@@ -40,34 +64,29 @@ studenInfoWight::~studenInfoWight()
     delete ui;
 }
 
-void studenInfoWight::setStudentData(const QList<QMap<QString, QVariant> > &data)
+void studenInfoWight::setStudentData(const QList<QMap<QString, QVariant>> &data)
 {
-    // 清空表格
-    ui->tableWidget->blockSignals(true);   // ✅ 加
+    ui->tableWidget->blockSignals(true);
     ui->tableWidget->setRowCount(0);
 
-    // 填充数据
-    for (int i = 0; i < data.size(); i++) {
-        const QMap<QString, QVariant> &rowData = data[i];
-        ui->tableWidget->insertRow(i);
+    for (int rowIndex = 0; rowIndex < data.size(); ++rowIndex) {
+        const auto &rowData = data[rowIndex];
+        ui->tableWidget->insertRow(rowIndex);
 
-        // 处理普通字段
-        for (int col = 0; col < ui->tableWidget->columnCount(); col++) {
-            QTableWidgetItem *item = new QTableWidgetItem();
+        for (int col = 0; col < ui->tableWidget->columnCount(); ++col) {
+            auto *item = new QTableWidgetItem();
             item->setTextAlignment(Qt::AlignCenter);
-            // 处理头像
-            if (col == ui->tableWidget->columnCount() - 1) {
-                QByteArray photoData = rowData["avatar"].toByteArray();
-                if (!photoData.isEmpty()) {
-                    QPixmap photo;
-                    photo.loadFromData(photoData);
-                    // 调整图片大小并确保居中
-                    QPixmap scaledPhoto = photo.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    item->setData(Qt::DecorationRole, photo.scaled(100, 100, Qt::KeepAspectRatio));
-                    item->setData(Qt::UserRole, photoData);
+
+            if (col == 8) {
+                const QByteArray avatarData = rowData.value("avatar").toByteArray();
+                if (!avatarData.isEmpty()) {
+                    QPixmap avatar;
+                    avatar.loadFromData(avatarData);
+                    item->setData(Qt::DecorationRole,
+                                  avatar.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                    item->setData(Qt::UserRole, avatarData);
                 }
             } else {
-                // 处理其他字段
                 QString key;
                 switch (col) {
                 case 0: key = "id"; break;
@@ -80,160 +99,140 @@ void studenInfoWight::setStudentData(const QList<QMap<QString, QVariant> > &data
                 case 7: key = "class_name"; break;
                 default: break;
                 }
-                if (!key.isEmpty()) {
-                    item->setText(rowData[key].toString());
-                }
+
+                item->setText(rowData.value(key).toString());
             }
-            ui->tableWidget->setItem(i, col, item);
 
+            ui->tableWidget->setItem(rowIndex, col, item);
         }
-
-        /****************************************************************************
-            ui->tableWidget->setItem(i, 0, new QTableWidgetItem(rowData["id"].toString()));
-            ui->tableWidget->setItem(i, 1, new QTableWidgetItem(rowData["student_id"].toString()));
-            ui->tableWidget->setItem(i, 2, new QTableWidgetItem(rowData["name"].toString()));
-            ui->tableWidget->setItem(i, 3, new QTableWidgetItem(rowData["gender"].toString()));
-            ui->tableWidget->setItem(i, 4, new QTableWidgetItem(rowData["age"].toString()));
-            ui->tableWidget->setItem(i, 5, new QTableWidgetItem(rowData["phone"].toString()));
-            ui->tableWidget->setItem(i, 6, new QTableWidgetItem(rowData["address"].toString()));
-            ui->tableWidget->setItem(i, 7, new QTableWidgetItem(rowData["class_name"].toString()));
-            ui->tableWidget->setItem(i, 8, new QTableWidgetItem(rowData["avatar"].toString()));
-
-            **********************************************************************************/
-
     }
-     ui->tableWidget->blockSignals(false);  // ✅ 加
+
+    ui->tableWidget->blockSignals(false);
 }
 
-//添加数据按钮
 void studenInfoWight::on_pbAdd_clicked()
 {
-    //添加初始化窗口
-    QDialog dialog(this);
-    dialog.setWindowTitle("添加学生信息");
-    dialog.setMinimumSize(600, 400);
+    photoData.clear();
 
-    //初始化对话框布局
-    QVBoxLayout* mainLayout = new QVBoxLayout(&dialog);
-    QHBoxLayout* contentLayout = new QHBoxLayout();
+    QDialog dialog(this);
+    dialog.setWindowTitle(QString::fromUtf8("新增学生"));
+    dialog.setMinimumSize(760, 440);
+
+    auto *mainLayout = new QVBoxLayout(&dialog);
+    auto *contentLayout = new QHBoxLayout();
     mainLayout->addLayout(contentLayout);
 
-    //添加表单和照片区域
-    QGroupBox *fromGroup = createFormGroup();
+    QGroupBox *formGroup = createFormGroup();
     QGroupBox *photoGroup = createPhotoGroup();
-    contentLayout->addWidget(fromGroup, 1);
-    contentLayout->addWidget(photoGroup, 1);
+    contentLayout->addWidget(formGroup, 3);
+    contentLayout->addWidget(photoGroup, 2);
 
-    //配置按钮区域
-    QHBoxLayout* btnLayout = new QHBoxLayout();
-    QPushButton* btnConfirm = new QPushButton(tr("确认"));
-    QPushButton* btnCancel = new QPushButton(tr("取消"));
+    auto *buttonLayout = new QHBoxLayout();
+    auto *confirmButton = new QPushButton(QString::fromUtf8("确认"), &dialog);
+    auto *cancelButton = new QPushButton(QString::fromUtf8("取消"), &dialog);
 
-    //配置按钮
-    btnConfirm->setFixedWidth(150);
-    btnCancel->setFixedWidth(150);
+    buttonLayout->addStretch();
+    buttonLayout->addWidget(confirmButton);
+    buttonLayout->addWidget(cancelButton);
 
-    //添加按钮到布局
-    btnLayout->addStretch();
-    btnLayout->addWidget(btnConfirm);
-    btnLayout->addWidget(btnCancel);
-    btnLayout->addStretch();
+    mainLayout->addLayout(buttonLayout);
 
-    //连接按钮信号
-    connect(btnConfirm, &QPushButton::clicked, &dialog, &QDialog::accept);
-    connect(btnCancel, &QPushButton::clicked, &dialog, &QDialog::reject);
-    mainLayout->addLayout(btnLayout);
+    connect(confirmButton, &QPushButton::clicked, &dialog, &QDialog::accept);
+    connect(cancelButton, &QPushButton::clicked, &dialog, &QDialog::reject);
 
-
-    //显示对话框
-    if(dialog.exec() == QDialog::Accepted) handleDialogAccepted(fromGroup, photoGroup);
+    if (dialog.exec() == QDialog::Accepted) {
+        handleDialogAccepted(formGroup, photoGroup);
+    }
 }
 
 QGroupBox *studenInfoWight::createFormGroup()
 {
-    //初始化表单信息
-    QGroupBox* formGroup = new QGroupBox("基本信息");
-    QFormLayout* formLayout = new QFormLayout(formGroup);
+    auto *formGroup = new QGroupBox(QString::fromUtf8("基本信息"));
+    auto *formLayout = new QFormLayout(formGroup);
 
-    //初始化控件
-    QLineEdit* idEdit = new QLineEdit();
+    auto *idEdit = new QLineEdit();
     idEdit->setObjectName("idEdit");
-    QLineEdit* nameEdit = new QLineEdit();
-    nameEdit->setObjectName("nameEdit");
-    // 3. 性别（推荐用 QComboBox 下拉选择）
-    QComboBox* genderCombo = new QComboBox();
-    genderCombo->setObjectName("genderConbo");
-    genderCombo->addItems({"男", "女"});
-    // 4. 年龄（数字输入框 QSpinBox）
-    QSpinBox* ageSpin = new QSpinBox();
-    ageSpin->setObjectName("ageSoin");
-    ageSpin->setRange(1, 100); // 限制年龄范围
-    //5.电话
-    QLineEdit* phoneEdit = new QLineEdit();
-    phoneEdit->setObjectName("phoneEdit");
-    //6.地址多行输入可用 (QTextEdit）
-    QLineEdit* addressEdit = new QLineEdit();
-    addressEdit->setObjectName("addressEdit");
-    addressEdit->setMaximumHeight(60); //限制高度
-    //7.班级名称
-    QComboBox* classCombo = new QComboBox();
-    classCombo->setObjectName("classCombo");
-    classCombo->addItems({"计算机班", "人工智能班", "大数据班", "物联网班"});
 
-    //配置控件
-    formLayout->addRow("学号", idEdit);
-    formLayout->addRow("姓名:", nameEdit);
-    formLayout->addRow("性别:", genderCombo);
-    formLayout->addRow("年龄:", ageSpin);
-    formLayout->addRow("电话:", phoneEdit);
-    formLayout->addRow("地址:", addressEdit);
-    formLayout->addRow("班级名称:", classCombo);
+    auto *nameEdit = new QLineEdit();
+    nameEdit->setObjectName("nameEdit");
+
+    auto *genderCombo = new QComboBox();
+    genderCombo->setObjectName("genderCombo");
+    genderCombo->addItems({QString::fromUtf8("男"), QString::fromUtf8("女")});
+
+    auto *ageSpin = new QSpinBox();
+    ageSpin->setObjectName("ageSpin");
+    ageSpin->setRange(1, 100);
+
+    auto *phoneEdit = new QLineEdit();
+    phoneEdit->setObjectName("phoneEdit");
+
+    auto *addressEdit = new QLineEdit();
+    addressEdit->setObjectName("addressEdit");
+
+    auto *classCombo = new QComboBox();
+    classCombo->setObjectName("classCombo");
+    classCombo->addItems({
+        QString::fromUtf8("计算机班"),
+        QString::fromUtf8("人工智能班"),
+        QString::fromUtf8("大数据班"),
+        QString::fromUtf8("物联网班")
+    });
+
+    formLayout->addRow(QString::fromUtf8("学号："), idEdit);
+    formLayout->addRow(QString::fromUtf8("姓名："), nameEdit);
+    formLayout->addRow(QString::fromUtf8("性别："), genderCombo);
+    formLayout->addRow(QString::fromUtf8("年龄："), ageSpin);
+    formLayout->addRow(QString::fromUtf8("电话："), phoneEdit);
+    formLayout->addRow(QString::fromUtf8("地址："), addressEdit);
+    formLayout->addRow(QString::fromUtf8("班级："), classCombo);
+
     return formGroup;
 }
 
-//创建照片
 QGroupBox *studenInfoWight::createPhotoGroup()
 {
-    QGroupBox* photoGroup = new QGroupBox("照片");
-    QVBoxLayout* photoLayout = new QVBoxLayout();
-    //初始化控件
-    QLabel* lblPhotoPreview = new QLabel();
-    QPushButton* btnSelectPhone = new QPushButton(tr("选择照片"));
+    auto *photoGroup = new QGroupBox(QString::fromUtf8("学生头像"));
+    auto *photoLayout = new QVBoxLayout(photoGroup);
 
-    //配置控件
-    lblPhotoPreview->setAlignment(Qt::AlignCenter);
-    lblPhotoPreview->setMinimumSize(200, 200);
-    btnSelectPhone->setFixedSize(200, 40);
-    //添加控件到布局
-    photoLayout->addWidget(lblPhotoPreview);
-    photoLayout->addWidget(btnSelectPhone, 0, Qt::AlignCenter);
-    //连接照片
-    connect(btnSelectPhone, &QPushButton::clicked, [this, lblPhotoPreview]() {
-        QString fileName = QFileDialog::getOpenFileName(
+    auto *photoPreview = new QLabel();
+    photoPreview->setAlignment(Qt::AlignCenter);
+    photoPreview->setMinimumSize(220, 220);
+    photoPreview->setStyleSheet("border: 1px dashed #6f7f93; border-radius: 12px;");
+
+    auto *selectButton = new QPushButton(QString::fromUtf8("选择图片"));
+    selectButton->setFixedWidth(160);
+
+    photoLayout->addWidget(photoPreview, 1);
+    photoLayout->addWidget(selectButton, 0, Qt::AlignCenter);
+
+    connect(selectButton, &QPushButton::clicked, [this, photoPreview]() {
+        const QString fileName = QFileDialog::getOpenFileName(
                     this,
-                    tr("选择学生照片"),
+                    QString::fromUtf8("选择头像"),
                     QStandardPaths::writableLocation(QStandardPaths::PicturesLocation),
-                    tr("图片文件(*.png *.jpg *.jpeg)")
-                    );
-        //加载图片文件
-        if(!fileName.isEmpty()) {
-            QPixmap pixmap(fileName);
-            if(!pixmap.isNull()) {
-                pixmap = pixmap.scaled(//等比例缩放
-                                       lblPhotoPreview->width() - 30,
-                                       lblPhotoPreview->height() - 30,
-                                       Qt::KeepAspectRatio
-                                       );
-                lblPhotoPreview->setPixmap(pixmap);
-                QBuffer buffer(&photoData); //转换字节数组
-                buffer.open(QIODevice::WriteOnly);
-                pixmap.save(&buffer, "PNG");
-            }
-            else QMessageBox::warning(this, tr("错误"), tr("无法加载图片文件"));
+                    QString::fromUtf8("图片文件 (*.png *.jpg *.jpeg *.bmp)"));
+
+        if (fileName.isEmpty()) {
+            return;
         }
+
+        QPixmap pixmap(fileName);
+        if (pixmap.isNull()) {
+            QMessageBox::warning(this, QString::fromUtf8("加载失败"), QString::fromUtf8("无法加载所选图片。"));
+            return;
+        }
+
+        photoPreview->setPixmap(pixmap.scaled(photoPreview->size() - QSize(20, 20),
+                                              Qt::KeepAspectRatio,
+                                              Qt::SmoothTransformation));
+
+        photoData.clear();
+        QBuffer buffer(&photoData);
+        buffer.open(QIODevice::WriteOnly);
+        pixmap.save(&buffer, "PNG");
     });
-    // 添加这行代码，将布局设置到photoGroup上能显示选择图片按钮
-    photoGroup->setLayout(photoLayout);
+
     return photoGroup;
 }
 
@@ -241,92 +240,88 @@ void studenInfoWight::handleDialogAccepted(QGroupBox *formGroup, QGroupBox *phot
 {
     Q_UNUSED(photoGroup);
 
-    //获取表单数据
-    QLineEdit* idEdit = formGroup->findChild<QLineEdit*>("idEdit");
-    QLineEdit* nameEdit = formGroup->findChild<QLineEdit*>("nameEdit");
-    QComboBox* genderCombo = formGroup->findChild<QComboBox*>("genderConbo"); // 修复对象名称
-    QSpinBox* ageSpin = formGroup->findChild<QSpinBox*>("ageSoin"); // 修复对象名称
-    QLineEdit* phoneEdit = formGroup->findChild<QLineEdit*>("phoneEdit"); // 修复对象名称
-    QLineEdit* addressEdit = formGroup->findChild<QLineEdit*>("addressEdit"); // 添加
-    QComboBox* classCombo = formGroup->findChild<QComboBox*>("classCombo");
+    auto *idEdit = formGroup->findChild<QLineEdit *>("idEdit");
+    auto *nameEdit = formGroup->findChild<QLineEdit *>("nameEdit");
+    auto *genderCombo = formGroup->findChild<QComboBox *>("genderCombo");
+    auto *ageSpin = formGroup->findChild<QSpinBox *>("ageSpin");
+    auto *phoneEdit = formGroup->findChild<QLineEdit *>("phoneEdit");
+    auto *addressEdit = formGroup->findChild<QLineEdit *>("addressEdit");
+    auto *classCombo = formGroup->findChild<QComboBox *>("classCombo");
 
-    // 检查所有控件是否找到
     if (!idEdit || !nameEdit || !genderCombo || !ageSpin || !phoneEdit || !addressEdit || !classCombo) {
-        QMessageBox::warning(this, "错误", "无法获取表单数据！");
+        QMessageBox::warning(this, QString::fromUtf8("控件错误"), QString::fromUtf8("表单控件初始化不完整。"));
         return;
     }
 
-    //校验数据
-    if(idEdit->text().isEmpty() || nameEdit->text().isEmpty()) {
-        QMessageBox::warning(this, tr("错误"), tr("学号和姓名不能为空!"));
+    if (idEdit->text().trimmed().isEmpty() || nameEdit->text().trimmed().isEmpty()) {
+        QMessageBox::warning(this, QString::fromUtf8("数据不完整"), QString::fromUtf8("学号和姓名不能为空。"));
         return;
     }
 
-    //检查学号唯一性
     QSqlQuery checkQuery;
-    checkQuery.prepare("SELECT id FROM student WHERE id = ?");
-    checkQuery.addBindValue(idEdit->text());
+    checkQuery.prepare("SELECT id FROM student WHERE student_id = ?");
+    checkQuery.addBindValue(idEdit->text().trimmed());
     if (checkQuery.exec() && checkQuery.next()) {
-        QMessageBox::warning(this, tr("错误"), tr("学号 %1 已存在").arg(idEdit->text()));
+        QMessageBox::warning(this, QString::fromUtf8("学号重复"), QString::fromUtf8("该学号已经存在。"));
         return;
     }
-    //插入数据
-    QSqlDatabase::database().transaction();//开始事务
+
+    QSqlDatabase::database().transaction();
+
     QSqlQuery query;
     query.prepare(
-                "INSERT INTO student "
-                "(student_id, name, gender, age, phone, address, class_name, avatar) "
-                "VALUES (:student_id, :name, :gender, :age, :phone, :address, :class_name, :avatar)"
-                );
-    //绑定 8 个参数，与占位符数量一致
-    query.bindValue(":student_id", idEdit->text());  // student_id
-    query.bindValue(":name", nameEdit->text()); // name
-    query.bindValue(":gender", genderCombo->currentText()); //gender
-    query.bindValue(":age", ageSpin->value());   //age
-    query.bindValue(":phone", phoneEdit->text()); //phone
-    query.bindValue(":address", addressEdit->text()); //adresss
-    query.bindValue(":class_name", classCombo->currentText()); //class_name
-    query.bindValue(":avatar", photoData); // 绑定照片二进制数据
+                "INSERT INTO student (student_id, name, gender, age, phone, address, class_name, avatar) "
+                "VALUES (:student_id, :name, :gender, :age, :phone, :address, :class_name, :avatar)");
+    query.bindValue(":student_id", idEdit->text().trimmed());
+    query.bindValue(":name", nameEdit->text().trimmed());
+    query.bindValue(":gender", genderCombo->currentText());
+    query.bindValue(":age", ageSpin->value());
+    query.bindValue(":phone", phoneEdit->text().trimmed());
+    query.bindValue(":address", addressEdit->text().trimmed());
+    query.bindValue(":class_name", classCombo->currentText());
+    query.bindValue(":avatar", photoData);
 
-    // 执行SQL
-    if (query.exec()) {
-        //添加这行，提交
-        QSqlDatabase::database().commit();
-        QMessageBox::information(this, "成功", "学生信息添加成功！");
-        refreshTable(); // 刷新表格显示
-    } else {
-        QMessageBox::warning(this, "错误", "添加失败：" + query.lastError().text());
+    if (!query.exec()) {
+        QSqlDatabase::database().rollback();
+        QMessageBox::warning(this, QString::fromUtf8("新增失败"), query.lastError().text());
+        return;
     }
+
+    QSqlDatabase::database().commit();
+    QMessageBox::information(this, QString::fromUtf8("操作成功"), QString::fromUtf8("学生信息已添加。"));
+    refreshTable();
 }
-//更新项的内容，保存到项的数据和图片
+
 void studenInfoWight::handItemChanged(QTableWidgetItem *item)
 {
+    if (!item) {
+        return;
+    }
+
     ui->tableWidget->blockSignals(true);
 
-    int row = item->row();
-    int col = item->column();
+    const int row = item->row();
+    const int col = item->column();
 
-    // ❗禁止修改编号
     if (col == 0) {
-        QMessageBox::warning(this, "警告", "该列不可修改");
+        QMessageBox::warning(this, QString::fromUtf8("禁止修改"), QString::fromUtf8("编号列不允许直接修改。"));
+        refreshTable();
         ui->tableWidget->blockSignals(false);
         return;
     }
 
-    // ❗防止空指针
-    auto idItem = ui->tableWidget->item(row, 0);
+    auto *idItem = ui->tableWidget->item(row, 0);
     if (!idItem) {
         ui->tableWidget->blockSignals(false);
         return;
     }
 
-    QString id = idItem->text();
-
-    QString columnName = QStringList{
+    const QStringList columnNames = {
         "id", "student_id", "name", "gender", "age",
         "phone", "address", "class_name", "avatar"
-    }[col];
+    };
 
+    const QString columnName = columnNames.value(col);
     QSqlQuery query;
     query.prepare(QString("UPDATE student SET %1 = ? WHERE id = ?").arg(columnName));
 
@@ -336,10 +331,10 @@ void studenInfoWight::handItemChanged(QTableWidgetItem *item)
         query.addBindValue(item->text().trimmed());
     }
 
-    query.addBindValue(id);
+    query.addBindValue(idItem->text());
 
     if (!query.exec()) {
-        QMessageBox::warning(this, "错误", query.lastError().text());
+        QMessageBox::warning(this, QString::fromUtf8("更新失败"), query.lastError().text());
     }
 
     ui->tableWidget->blockSignals(false);
@@ -350,78 +345,82 @@ void studenInfoWight::refreshTable()
     ui->tableWidget->blockSignals(true);
     ui->tableWidget->setRowCount(0);
 
-    QSqlQuery qurey("SELECT * FROM student");
-    while (qurey.next()) {
-        int row = ui->tableWidget->rowCount();
+    QSqlQuery query("SELECT id, student_id, name, gender, age, phone, address, class_name, avatar FROM student");
+    while (query.next()) {
+        const int row = ui->tableWidget->rowCount();
         ui->tableWidget->insertRow(row);
 
-        for(int col = 0; col < ui->tableWidget->columnCount(); ++col) {
-            QTableWidgetItem *item = new QTableWidgetItem();
-            item->setTextAlignment(Qt::AlignCenter);//设置文本居中
-            //照片处理
-            if(col == ui->tableWidget->columnCount() -1) {
-                QByteArray photoData = qurey.value(col).toByteArray();
-                if(!photoData.isEmpty()) {
-                    QPixmap photo;
-                    photo.loadFromData(photoData);
-                    // 调整图片大小并确保居中
-                    QPixmap scaledPhoto = photo.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    item->setData(Qt::DecorationRole, photo.scaled(100, 100, Qt::KeepAspectRatio));
-                    item->setData(Qt::UserRole, photoData);
+        for (int col = 0; col < ui->tableWidget->columnCount(); ++col) {
+            auto *item = new QTableWidgetItem();
+            item->setTextAlignment(Qt::AlignCenter);
+
+            if (col == 8) {
+                const QByteArray avatarData = query.value(col).toByteArray();
+                if (!avatarData.isEmpty()) {
+                    QPixmap avatar;
+                    avatar.loadFromData(avatarData);
+                    item->setData(Qt::DecorationRole,
+                                  avatar.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                    item->setData(Qt::UserRole, avatarData);
                 }
+            } else {
+                item->setText(query.value(col).toString());
             }
-            else {
-                item->setText(qurey.value(col).toString());
-            }
+
             ui->tableWidget->setItem(row, col, item);
         }
     }
+
     ui->tableWidget->blockSignals(false);
 }
 
-
 void studenInfoWight::on_pbdeleteLine_clicked()
 {
-    auto selected = ui->tableWidget->selectionModel()->selectedRows();
-    if(selected.isEmpty()) {
-        QMessageBox::warning(this, "警告", "请先选择要删除的行！");
+    const auto selectedRows = ui->tableWidget->selectionModel()->selectedRows();
+    if (selectedRows.isEmpty()) {
+        QMessageBox::warning(this, QString::fromUtf8("提示"), QString::fromUtf8("请至少选择一行数据。"));
         return;
     }
+
     QSqlDatabase::database().transaction();
-    foreach(const QModelIndex & index, selected) {
-        QString id = ui->tableWidget->item(index.row(), 0)->text();
+
+    for (const QModelIndex &index : selectedRows) {
+        const QString id = ui->tableWidget->item(index.row(), 0)->text();
         QSqlQuery query;
         query.prepare("DELETE FROM student WHERE id = ?");
         query.addBindValue(id);
-        if(!query.exec()) {
+
+        if (!query.exec()) {
             QSqlDatabase::database().rollback();
-            QMessageBox::critical(this, "错误", "删除失败:" + query.lastError().text());
+            QMessageBox::critical(this, QString::fromUtf8("删除失败"), query.lastError().text());
             return;
         }
     }
+
     QSqlDatabase::database().commit();
     refreshTable();
 }
-//删除项
+
 void studenInfoWight::on_pbdeleteItem_clicked()
 {
-    auto selecetd = ui->tableWidget->selectedItems();
-    if(selecetd.isEmpty()) {
-        QMessageBox::warning(this, "警告", "请先选择要删除的单元格");
+    const auto selectedItems = ui->tableWidget->selectedItems();
+    if (selectedItems.isEmpty()) {
+        QMessageBox::warning(this, QString::fromUtf8("提示"), QString::fromUtf8("请至少选择一个单元格。"));
         return;
     }
-    QSqlDatabase::database().transaction();//开始事务
-    foreach (QTableWidgetItem *item, selecetd) {
-        int row = item->row();
-        int col = item->column();
-        // 跳过ID列，不允许删除ID
+
+    QSqlDatabase::database().transaction();
+
+    for (QTableWidgetItem *item : selectedItems) {
+        const int row = item->row();
+        const int col = item->column();
+
         if (col == 0) {
             continue;
         }
-        // 获取ID值
-        QString id = ui->tableWidget->item(row, 0)->text();
 
-        // 根据列索引确定字段名
+        const QString id = ui->tableWidget->item(row, 0)->text();
+
         QString fieldName;
         switch (col) {
         case 1: fieldName = "student_id"; break;
@@ -432,26 +431,31 @@ void studenInfoWight::on_pbdeleteItem_clicked()
         case 6: fieldName = "address"; break;
         case 7: fieldName = "class_name"; break;
         case 8: fieldName = "avatar"; break;
-        default: continue; // 跳过无效列
+        default: break;
         }
-        {
-            // 准备SQL语句
-            QSqlQuery query;
-            query.prepare("UPDATE student SET " + fieldName + " = ? WHERE id = ?");
 
-            // 绑定两个参数
-            query.addBindValue("");  // 设置为空字符串
-            query.addBindValue(id);   // 设置ID
+        if (fieldName.isEmpty()) {
+            continue;
+        }
 
-            // 执行SQL
-            if(!query.exec()) {
-                QSqlDatabase::database().rollback();
-                QMessageBox::critical(this, "错误", "更新失败:" + query.lastError().text());
-                return;
-            }
+        QSqlQuery query;
+        query.prepare(QString("UPDATE student SET %1 = ? WHERE id = ?").arg(fieldName));
+
+        if (fieldName == "avatar") {
+            query.addBindValue(QByteArray());
+        } else {
+            query.addBindValue(QString());
+        }
+
+        query.addBindValue(id);
+
+        if (!query.exec()) {
+            QSqlDatabase::database().rollback();
+            QMessageBox::critical(this, QString::fromUtf8("清空失败"), query.lastError().text());
+            return;
         }
     }
+
     QSqlDatabase::database().commit();
     refreshTable();
 }
-

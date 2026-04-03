@@ -5,15 +5,18 @@
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
-    //文件读取
-    QFile file(":/style.qss");
-    if (file.open(QFile::ReadOnly)) {
-        QString styleSheet = QLatin1String(file.readAll());
+    QApplication app(argc, argv);
+
+    // 启动时统一加载全局样式表，让所有页面共享同一套工业风设计语言。
+    QFile styleFile(":/style.qss");
+    if (styleFile.open(QFile::ReadOnly)) {
+        const QString styleSheet = QLatin1String(styleFile.readAll());
         qApp->setStyleSheet(styleSheet);
-        file.close();
+        styleFile.close();
     }
-    MainWindow w;
-    w.show();
-    return a.exec();
+
+    MainWindow window;
+    window.show();
+
+    return app.exec();
 }

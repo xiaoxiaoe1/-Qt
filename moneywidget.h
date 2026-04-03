@@ -3,26 +3,27 @@
 
 #include <QWidget>
 
-//class QChartView;
-// ✅【关键修改1】前向声明也要加上命名空间
 namespace QtCharts {
-    class QChartView;
+class QChartView;
 }
-class QTableWidget;
+
 class QComboBox;
-class QPushButton;
 class QDateEdit;
+class QPushButton;
+class QTableWidget;
+
 namespace Ui {
 class MoneyWidget;
 }
 
+// 财务页面负责展示、筛选以及维护缴费记录。
 class MoneyWidget : public QWidget
 {
     Q_OBJECT
 
 public:
     explicit MoneyWidget(QWidget *parent = nullptr);
-    ~MoneyWidget();
+    ~MoneyWidget() override;
 
 private:
     void setupUI();
@@ -31,15 +32,16 @@ private:
     void addRecord();
     void editRecord();
     void deleteRecord();
-    QtCharts::QChartView* pieChartView;
-    QtCharts::QChartView* chartView;
-    QTableWidget* tablewidget;
-    QComboBox* studentComboBox;
-    QPushButton* addButton;
-    QPushButton* deleteButton;
-    QPushButton* editButton;
-    QDateEdit* startDateEdit;
-    QDateEdit* endDateEdit;
+
+    QtCharts::QChartView *pieChartView;
+    QtCharts::QChartView *chartView;
+    QTableWidget *tablewidget;
+    QComboBox *studentComboBox;
+    QPushButton *addButton;
+    QPushButton *deleteButton;
+    QPushButton *editButton;
+    QDateEdit *startDateEdit;
+    QDateEdit *endDateEdit;
 
     Ui::MoneyWidget *ui;
 };

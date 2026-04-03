@@ -1,65 +1,60 @@
 #ifndef SCHEDULEWIDGET_H
 #define SCHEDULEWIDGET_H
 
-#include <QWidget>
-#include <QMap>
 #include <QDate>
-#include <QComboBox>
-#include <QTableWidget>
+#include <QMap>
+#include <QWidget>
 
-class QTableWidget;
 class QComboBox;
 class QLabel;
 class QPushButton;
-class handleItemChanged;
-//防止头文件重复定义加上inline
-inline int customWeekNumber(const QDate& date) {
-//    QDate startOfYear(date.year(), 1, 1);
-//    int dayOfWeek = startOfYear.dayOfWeek();
-//    int daysToSubtract = startOfYear.dayOfWeek() - Qt::Monday;
-//    if (daysToSubtract > 0) startOfYear = startOfYear.addDays(-daysToSubtract);
- //   int days = startOfYear.daysTo(date);
- //   int week = days / 7 + 1;
-//    return week;
-     return date.weekNumber(); // Qt内置精准周数计算
+class QTableWidget;
+class QTableWidgetItem;
+
+// 使用 Qt 内置的周数算法，确保与系统日期规则保持一致。
+inline int customWeekNumber(const QDate &date)
+{
+    return date.weekNumber();
 }
 
 namespace Ui {
 class schedulewidget;
 }
 
+// 课表页面提供按周查看、录入和删除课程安排的能力。
 class schedulewidget : public QWidget
 {
     Q_OBJECT
 
 public:
     explicit schedulewidget(QWidget *parent = nullptr);
-    ~schedulewidget();
+    ~schedulewidget() override;
 
 private:
     void setupUI(int currentYear, int currentWeek);
     void setupTable();
     void loadSchedule();
     void addCourse();
-    void handleItemChanged(QTableWidgetItem* item);
+    void handleItemChanged(QTableWidgetItem *item);
     void deleteCourse();
     void showPreviousWeek();
     void showNextWeek();
     QPair<QDate, QDate> getWeekRange(int year, int week);
-    QTableWidget* tablewidget;
-    QComboBox* yearboBox;
-    QComboBox* weekboBox;
-    QLabel* dataRangeLabel; //显示日期范围标签
-    QPushButton* addButton;
-    QPushButton* deleteButton;
-    QPushButton* prevButton;
-    QPushButton* nextButton;
-    //课程数据存储结构：键为（year, week）,值为课程表数据
+
+    QTableWidget *tablewidget;
+    QComboBox *yearboBox;
+    QComboBox *weekboBox;
+    QLabel *dataRangeLabel;
+    QPushButton *addButton;
+    QPushButton *deleteButton;
+    QPushButton *prevButton;
+    QPushButton *nextButton;
+
+    // 保留缓存字段，后续如果要做本地周视图缓存可以直接复用。
     QMap<QPair<int, int>, QVector<QVector<QString>>> scheduleData;
-//    QStringList times;//上午1 上午2
     QStringList times = {"上午1", "上午2", "下午1", "下午2", "晚上1", "晚上2"};
+
     Ui::schedulewidget *ui;
 };
-
 
 #endif // SCHEDULEWIDGET_H
