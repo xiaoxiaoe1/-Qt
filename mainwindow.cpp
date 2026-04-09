@@ -2,6 +2,8 @@
 #include "ui_mainwindow.h"
 
 #include "studeninfowight.h"
+#include "honorwidget.h"
+#include "systemsettingswidget.h"
 
 #include <QButtonGroup>
 #include <QDebug>
@@ -10,6 +12,7 @@
 #include <QSqlError>
 #include <QSqlQuery>
 
+// 构造主窗口，依次完成数据库初始化、界面创建和首页数据加载。
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -21,14 +24,23 @@ MainWindow::MainWindow(QWidget *parent)
 
     initializeWindowText();
     initializeNavigation();
+    //这个插入荣誉页
+    HonorWidget* honorWidget = new HonorWidget(this);
+    ui->stackedWidget->insertWidget(3, honorWidget); // 插入到荣誉页
+    //插入系统页
+    SystemSettingsWidget* systemSettingWidget = new SystemSettingsWidget(this);
+    ui->stackedWidget->insertWidget(4, systemSettingWidget);//插入到系统设置页
+
     loadStudentData();
 }
 
+// 释放主窗口持有的界面对象。
 MainWindow::~MainWindow()
 {
     delete ui;
 }
 
+// 初始化 SQLite 数据库连接，并确保项目运行所需的数据表已经存在。
 void MainWindow::initializeDatabase()
 {
     // Reuse the default connection if it already exists.
@@ -85,8 +97,30 @@ void MainWindow::initializeDatabase()
                 ")")) {
         qDebug() << "Create financialRecords failed:" << query.lastError().text();
     }
+
+    if (!query.exec(
+                "CREATE TABLE IF NOT EXISTS honor ("
+                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                "image_data BLOB,"
+                "description TEXT,"
+                "added_date TEXT"
+                ")")) {
+        qDebug() << "创建表失败："  << query.lastError().text();
+    }
+
+    // 创建users表
+    if (!query.exec(
+        "CREATE TABLE IF NOT EXISTS users ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "username TEXT UNIQUE NOT NULL,"
+        "password TEXT NOT NULL"
+        ")")) {
+        qDebug() << "创建users表失败：" << query.lastError().text();
+    }
+
 }
 
+// 初始化左侧导航按钮与右侧页面栈之间的切换关系。
 void MainWindow::initializeNavigation()
 {
     // These object names let QSS style the nav and content areas precisely.
@@ -106,6 +140,7 @@ void MainWindow::initializeNavigation()
     ui->stackedWidget->setCurrentIndex(0);
 }
 
+// 统一设置主窗口标题和导航按钮显示文字。
 void MainWindow::initializeWindowText()
 {
     setWindowTitle(QString::fromUtf8("学生管理系统"));
@@ -116,6 +151,7 @@ void MainWindow::initializeWindowText()
     ui->tbnSystem->setText(QString::fromUtf8("系统设置"));
 }
 
+// 从 student 表读取全部学生信息，并同步到学生信息页面的表格中。
 void MainWindow::loadStudentData()
 {
     QSqlDatabase db = QSqlDatabase::database();

@@ -1,5 +1,5 @@
-#include "mainwindow.h"
-
+ #include "mainwindow.h"
+#include "logindialog.h"
 #include <QApplication>
 #include <QFile>
 
@@ -15,8 +15,12 @@ int main(int argc, char *argv[])
         styleFile.close();
     }
 
-    MainWindow window;
-    window.show();
+    LoginDialog loginDig;
+    if (loginDig.exec() == LoginDialog::Accepted) {
+        MainWindow window;
+        window.show();
+        return app.exec();
+    }
+    return 0;
 
-    return app.exec();
 }

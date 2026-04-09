@@ -32,6 +32,8 @@ private:
     void addRecord();
     void editRecord();
     void deleteRecord();
+    void updatePieChart();
+    void updateChart();
 
     QtCharts::QChartView *pieChartView;
     QtCharts::QChartView *chartView;

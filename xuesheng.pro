@@ -1,4 +1,4 @@
-QT       += core gui widgets charts
+QT       += core gui widgets charts network
 QT       += sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -17,24 +17,35 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    honorwidget.cpp \
+    logindialog.cpp \
     main.cpp \
     mainwindow.cpp \
     moneywidget.cpp \
     schedulewidget.cpp \
-    studeninfowight.cpp
+    settings.cpp \
+    studeninfowight.cpp \
+    systemsettingswidget.cpp
 
 HEADERS += \
+    honorwidget.h \
+    logindialog.h \
     mainwindow.h \
     moneywidget.h \
     schedulewidget.h \
+    settings.h \
     studeninfowight.h \
+    systemsettingswidget.h \
     tabledelegates.h
 
 FORMS += \
+    honorwidget.ui \
+    logindialog.ui \
     mainwindow.ui \
     moneywidget.ui \
     schedulewidget.ui \
-    studeninfowight.ui
+    studeninfowight.ui \
+    systemsettingswidget.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
